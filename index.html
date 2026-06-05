@@ -35,15 +35,84 @@
     </div>
 
     <script>
-      // Wait for the giant SVG to finish loading externally
-      document.getElementById("my-svg").addEventListener("load", function () {
-        svgPanZoom("#my-svg", {
-          zoomEnabled: true,
-          controlIconsEnabled: true, // Adds nice +/- zoom buttons UI
-          fit: true,
-          center: true,
-          minZoom: 0.1,
-          maxZoom: 10,
+      window.addEventListener("load", function () {
+        var objectElement = document.getElementById("my-svg");
+        var container = document.getElementById("container");
+        var panZoomInstance;
+
+        function initPanZoom() {
+          panZoomInstance = svgPanZoom("#my-svg", {
+            zoomEnabled: true,
+            controlIconsEnabled: true,
+            fit: false, // Disable default fitting logic
+            center: true, // Center horizontally
+            minZoom: 0.05,
+            maxZoom: 10,
+            zoomOnMouseWheel: false, // Disable standard scroll-wheel zooming
+          });
+
+          // --- REQUIREMENT 1: Fit to Width on Load ---
+          // Get the actual width of the container on the screen
+          var containerWidth = container.clientWidth;
+          // Your SVG's base width is 3840
+          var svgBaseWidth = 3840;
+
+          // Calculate the precise zoom level to make 3840px fit containerWidth
+          var initialZoom = containerWidth / svgBaseWidth;
+
+          panZoomInstance.zoom(initialZoom);
+          panZoomInstance.pan({ x: 0, y: 0 }); // Reset pan position to top-left
+
+          // --- REQUIREMENT 2: Conflict-Free Mouse Wheel Handling ---
+          container.addEventListener(
+            "wheel",
+            function (event) {
+              // CRITICAL: This stops the browser from doing its default action
+              // (like page scrolling or native zooming if a conflict arises)
+              event.preventDefault();
+
+              // CHANGED: Using the Shift key to zoom instead of Ctrl/Cmd
+              if (event.shiftKey) {
+                // Zooming mode (Shift + Scroll)
+                var zoomFactor = event.deltaY < 0 ? 1.05 : 0.95;
+                panZoomInstance.zoomAtPoint(
+                  panZoomInstance.getZoom() * zoomFactor,
+                  {
+                    x: event.clientX,
+                    y: event.clientY,
+                  },
+                );
+              } else {
+                // Normal scrolling mode: Pan the infographic vertically (Scroll only)
+                var scrollSpeed = event.deltaY * 0.5;
+                var currentPan = panZoomInstance.getPan();
+
+                panZoomInstance.pan({
+                  x: currentPan.x,
+                  y: currentPan.y - scrollSpeed,
+                });
+              }
+            },
+            { passive: false },
+          ); // 'passive: false' allows preventDefault() to work safely
+        }
+
+        // Handle local vs server loading states cleanly
+        if (
+          objectElement.contentDocument &&
+          objectElement.contentDocument.documentElement
+        ) {
+          initPanZoom();
+        } else {
+          objectElement.addEventListener("load", initPanZoom);
+        }
+
+        // Optional: Recalculate width fit if the user resizes their browser window
+        window.addEventListener("resize", function () {
+          if (panZoomInstance) {
+            var initialZoom = container.clientWidth / 3840;
+            panZoomInstance.zoom(initialZoom);
+          }
         });
       });
     </script>
