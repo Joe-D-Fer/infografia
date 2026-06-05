@@ -3,117 +3,137 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>infografía | Oracle DB vs Microsoft SQL Server</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
+    <title>Infografía | Oracle DB vs Microsoft SQL Server</title>
+
+    <meta
+      name="description"
+      content="Infografía comparativa entre Oracle Database y Microsoft SQL Server"
+    />
 
     <style>
       html,
       body {
         margin: 0;
         padding: 0;
-        width: 100%;
-        height: 100%;
-        overflow: hidden; /* JavaScript will handle the scrolling/dragging */
         background: #fff;
+        overflow-x: auto;
       }
 
-      #container {
-        width: 100vw;
-        height: 100vh;
+      /* Centers image horizontally */
+      body {
+        min-width: 100vw;
       }
 
-      #my-svg {
+      .wrapper {
+        display: flex;
+        justify-content: center;
         width: 100%;
-        height: 100%;
+      }
+
+      img {
+        display: block;
+        height: auto;
+        width: calc(100vw * var(--zoom, 1));
+        max-width: none;
+      }
+
+      /* Floating controls */
+      .controls {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 1000;
+      }
+
+      #zoomBtn {
+        padding: 10px 14px;
+        border: none;
+        border-radius: 8px;
+        background: #222;
+        color: white;
+        cursor: pointer;
+        font-size: 14px;
+        opacity: 0.3;
+        transition: opacity 0.2s ease;
+      }
+
+      #zoomBtn:hover,
+      #zoomBtn:focus,
+      #zoomBtn:active {
+        opacity: 1;
+      }
+      #zoomBtn.active {
+        opacity: 1;
+      }
+
+      .popup {
+        display: none;
+        margin-top: 8px;
+        background: white;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        padding: 10px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+      }
+
+      .popup.show {
+        display: block;
+      }
+
+      select {
+        width: 120px;
+        padding: 6px;
       }
     </style>
   </head>
+
   <body>
-    <div id="container">
-      <object id="my-svg" data="infografia.svg" type="image/svg+xml"></object>
+    <div class="controls">
+      <button id="zoomBtn">Zoom: 100%</button>
+
+      <div class="popup" id="popup">
+        <select id="zoomSelect">
+          <option value="0.25">25%</option>
+          <option value="0.5">50%</option>
+          <option value="0.75">75%</option>
+          <option value="1" selected>100%</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="wrapper">
+      <img
+        id="infografia"
+        src="infografia.svg"
+        alt="Infografía comparativa entre Oracle DB y Microsoft SQL Server"
+      />
     </div>
 
     <script>
-      window.addEventListener("load", function () {
-        var objectElement = document.getElementById("my-svg");
-        var container = document.getElementById("container");
-        var panZoomInstance;
+      const popup = document.getElementById("popup");
+      const zoomBtn = document.getElementById("zoomBtn");
+      const zoomSelect = document.getElementById("zoomSelect");
 
-        function initPanZoom() {
-          panZoomInstance = svgPanZoom("#my-svg", {
-            zoomEnabled: true,
-            controlIconsEnabled: true,
-            fit: false, // Disable default fitting logic
-            center: true, // Center horizontally
-            minZoom: 0.05,
-            maxZoom: 10,
-            zoomOnMouseWheel: false, // Disable standard scroll-wheel zooming
-          });
+      zoomBtn.addEventListener("click", () => {
+        popup.classList.toggle("show");
+        zoomBtn.classList.toggle("active");
+      });
 
-          // --- REQUIREMENT 1: Fit to Width on Load ---
-          // Get the actual width of the container on the screen
-          var containerWidth = container.clientWidth;
-          // Your SVG's base width is 3840
-          var svgBaseWidth = 3840;
+      zoomSelect.addEventListener("change", () => {
+        const zoom = zoomSelect.value;
 
-          // Calculate the precise zoom level to make 3840px fit containerWidth
-          var initialZoom = containerWidth / svgBaseWidth;
+        document.documentElement.style.setProperty("--zoom", zoom);
 
-          panZoomInstance.zoom(initialZoom);
-          panZoomInstance.pan({ x: 0, y: 0 }); // Reset pan position to top-left
+        zoomBtn.textContent =
+          "Zoom: " + Math.round(parseFloat(zoom) * 100) + "%";
+      });
 
-          // --- REQUIREMENT 2: Conflict-Free Mouse Wheel Handling ---
-          container.addEventListener(
-            "wheel",
-            function (event) {
-              // CRITICAL: This stops the browser from doing its default action
-              // (like page scrolling or native zooming if a conflict arises)
-              event.preventDefault();
-
-              // CHANGED: Using the Shift key to zoom instead of Ctrl/Cmd
-              if (event.shiftKey) {
-                // Zooming mode (Shift + Scroll)
-                var zoomFactor = event.deltaY < 0 ? 1.05 : 0.95;
-                panZoomInstance.zoomAtPoint(
-                  panZoomInstance.getZoom() * zoomFactor,
-                  {
-                    x: event.clientX,
-                    y: event.clientY,
-                  },
-                );
-              } else {
-                // Normal scrolling mode: Pan the infographic vertically (Scroll only)
-                var scrollSpeed = event.deltaY * 0.5;
-                var currentPan = panZoomInstance.getPan();
-
-                panZoomInstance.pan({
-                  x: currentPan.x,
-                  y: currentPan.y - scrollSpeed,
-                });
-              }
-            },
-            { passive: false },
-          ); // 'passive: false' allows preventDefault() to work safely
+      document.addEventListener("click", (e) => {
+        if (!popup.contains(e.target) && e.target !== zoomBtn) {
+          popup.classList.remove("show");
+          zoomBtn.classList.remove("active");
         }
-
-        // Handle local vs server loading states cleanly
-        if (
-          objectElement.contentDocument &&
-          objectElement.contentDocument.documentElement
-        ) {
-          initPanZoom();
-        } else {
-          objectElement.addEventListener("load", initPanZoom);
-        }
-
-        // Optional: Recalculate width fit if the user resizes their browser window
-        window.addEventListener("resize", function () {
-          if (panZoomInstance) {
-            var initialZoom = container.clientWidth / 3840;
-            panZoomInstance.zoom(initialZoom);
-          }
-        });
       });
     </script>
   </body>
