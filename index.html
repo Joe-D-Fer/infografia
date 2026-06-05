@@ -3,36 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta
-      name="description"
-      content="Infografía: Oracle DB vs Microsoft SQL Server"
-    />
-    <meta name="robots" content="index, follow" />
     <title>infografía | Oracle DB vs Microsoft SQL Server</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/svg-pan-zoom@3.6.1/dist/svg-pan-zoom.min.js"></script>
 
     <style>
       html,
       body {
         margin: 0;
         padding: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden; /* JavaScript will handle the scrolling/dragging */
         background: #fff;
       }
 
-      body {
-        text-align: center;
+      #container {
+        width: 100vw;
+        height: 100vh;
       }
 
-      img {
-        display: inline-block;
-        max-width: 100vw;
-        height: auto;
+      #my-svg {
+        width: 100%;
+        height: 100%;
       }
     </style>
   </head>
   <body>
-    <img
-      src="infografia.svg"
-      alt="Infografía: Oracle DB vs Microsoft SQL Server"
-    />
+    <div id="container">
+      <object id="my-svg" data="infografia.svg" type="image/svg+xml"></object>
+    </div>
+
+    <script>
+      // Wait for the giant SVG to finish loading externally
+      document.getElementById("my-svg").addEventListener("load", function () {
+        svgPanZoom("#my-svg", {
+          zoomEnabled: true,
+          controlIconsEnabled: true, // Adds nice +/- zoom buttons UI
+          fit: true,
+          center: true,
+          minZoom: 0.1,
+          maxZoom: 10,
+        });
+      });
+    </script>
   </body>
 </html>
